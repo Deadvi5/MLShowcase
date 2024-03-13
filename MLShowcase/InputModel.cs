@@ -3,7 +3,7 @@ using Microsoft.ML.Data;
 public class InputModel
 {
     [LoadColumn(0)]
-    public string Character { get; set; }
+    public string? Input { get; set; }
     [LoadColumn(1)]
-    public string Alignment { get; set; }
+    public string? Result { get; set; }
 }

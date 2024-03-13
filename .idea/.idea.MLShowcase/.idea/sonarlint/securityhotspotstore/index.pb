@@ -5,3 +5,7 @@ C
 MLShowcase/test.tsv,7/f/7f67de6b484be36fa9bf1916ed92dcf17b223898
 H
 MLShowcase/InputModel.cs,6/1/61a9887bf6c7d07e743d46398a45e3e9a29d85f8
+R
+"MLShowcase/DepartmentPrediction.cs,8/6/8647b2a8643a28d29274643ee0cd7bc233cd7ebd
+I
+MLShowcase/OutputModel.cs,0/4/047d58d9228fdddf90b14437eebf8b3f683b0b47

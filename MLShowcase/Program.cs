@@ -1,29 +1,29 @@
 ﻿using Microsoft.ML;
 
-var _trainingFilePath = "/Users/villal/Documents/dev/MLShowcase/MLShowcase/MLShowcase/test.tsv";
-var _modelFilePath = "/Users/villal/Documents/dev/MLShowcase/MLShowcase/MLShowcase/model.zip";
-const string inputColumnName = "Alignment";
+const string trainingFilePath = "../../../test.tsv";
+const string modelFilePath = "../../../model.zip";
+const string inputColumnName = "Result";
 const string outputColumnName = "Label";
 
-const string featurizedInputColumnName = "Character";
+const string featurizedInputColumnName = "Input";
 const string featurizedOutputColumnName = "Featurized";
 const string contcatenatedInputColumnName = "Features";
 
 
 var mlContext = new MLContext(seed: 0);
-PredictionEngine<InputModel, DepartmentPrediction> predictionEngine;
-ITransformer _model;
+PredictionEngine<InputModel, OutputModel> predictionEngine;
+ITransformer model;
 
 Console.WriteLine("Do you want to retrain the model? y/n (default n)");
-string retrainModel = Console.ReadLine() ?? "n";
+var retrainModel = Console.ReadLine() ?? "n";
 
 if (retrainModel == "y")
 {
-    IDataView _trainingDataView = mlContext.Data.LoadFromTextFile<InputModel>(_trainingFilePath, hasHeader: true);
+    var trainingDataView = mlContext.Data.LoadFromTextFile<InputModel>(trainingFilePath, hasHeader: true);
 
-    var pipeline = ProcessData();
-    BuildAndTrainModel(_trainingDataView, pipeline);
-    SaveModelAsFile(_trainingDataView);
+    var pipeline = BuildTrainingPipeline();
+    TrainModel(trainingDataView, pipeline);
+    SaveModelAsFile(trainingDataView);
 }
 
 while (true)
@@ -34,21 +34,21 @@ while (true)
     Console.WriteLine("Result is: " + result);
 }
 
-string PredictDepartmentForSubject(string subjectLine)
+string PredictDepartmentForSubject(string userInput)
 {
-    var model = mlContext.Model.Load(_modelFilePath, out var modelInputSchema);
-    var emailSubject = new InputModel { Character = subjectLine };
-    predictionEngine = mlContext.Model.CreatePredictionEngine<InputModel, DepartmentPrediction>(model);
-    var result = predictionEngine.Predict(emailSubject);
-    return result?.Department ?? string.Empty;
+    var transformer = mlContext.Model.Load(modelFilePath, out _);
+    var inputModel = new InputModel { Input = userInput };
+    predictionEngine = mlContext.Model.CreatePredictionEngine<InputModel, OutputModel>(transformer);
+    var result = predictionEngine.Predict(inputModel);
+    return result?.Output ?? string.Empty;
 }
 
 void SaveModelAsFile(IDataView trainingDataView)
 {
-    mlContext.Model.Save(_model, trainingDataView.Schema, _modelFilePath);
+    mlContext.Model.Save(model, trainingDataView.Schema, modelFilePath);
 }
 
-IEstimator<ITransformer> ProcessData()
+IEstimator<ITransformer> BuildTrainingPipeline()
 {
     var processPipeline = mlContext.Transforms.Conversion.MapValueToKey(inputColumnName: inputColumnName, outputColumnName: outputColumnName)
         .Append(mlContext.Transforms.Text.FeaturizeText(inputColumnName: featurizedInputColumnName, outputColumnName:featurizedOutputColumnName))
@@ -58,10 +58,10 @@ IEstimator<ITransformer> ProcessData()
     return processPipeline;
 }
 
-void BuildAndTrainModel(IDataView trainingDataView, IEstimator<ITransformer> buildPipeline)
+void TrainModel(IDataView trainingDataView, IEstimator<ITransformer> buildPipeline)
 {
     var trainingPipeline = buildPipeline.Append(mlContext.MulticlassClassification.Trainers.SdcaMaximumEntropy())
         .Append(mlContext.Transforms.Conversion.MapKeyToValue("PredictedLabel"));
 
-    _model = trainingPipeline.Fit(trainingDataView);
+    model = trainingPipeline.Fit(trainingDataView);
 }
